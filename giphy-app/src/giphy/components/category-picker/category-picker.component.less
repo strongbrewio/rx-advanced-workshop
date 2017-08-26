@@ -1,0 +1,31 @@
+@import '../../../variables';
+
+:host {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  background: @color-yellow-light;
+  margin-top: 5px;
+  ul {
+    margin: 0px;
+    padding: 0px;
+  }
+  li {
+    list-style-type: none;
+    margin-bottom: 5px;
+  }
+  a {
+    background: @color-yellow;
+    display: flex;
+    text-decoration: none;
+    color: #fff;
+    padding: 10px;
+    &:hover {
+      background: @color-yellow-dark;
+    }
+    &.active {
+      background: #000;
+    }
+  }
+}
+
