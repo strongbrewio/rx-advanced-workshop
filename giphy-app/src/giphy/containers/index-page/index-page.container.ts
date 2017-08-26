@@ -13,6 +13,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { GiphyResult } from '../../types/giphy-result.type';
 import { Giph } from '../../types/giph.result';
+import 'rxjs/add/operator/mapTo';
 
 @Component({
   selector: 'index-page',
@@ -27,9 +28,8 @@ import { Giph } from '../../types/giph.result';
                       (setMaxHeight)="maxHeight$.next($event)"
                       (setMaxWidth)="maxWidth$.next($event)"></giphy-filter>
       </sidebar>
-      <giphy-overview [giphs]="filteredGiphs$|async"></giphy-overview>
+      <giphy-overview [loading]="loading$|async" [giphs]="filteredGiphs$|async"></giphy-overview>
     </div>
-    <spinner [spin]="false"></spinner>
   `
 })
 export class IndexPageContainer {
@@ -47,12 +47,17 @@ export class IndexPageContainer {
   ];
   currentCategory$ = this.activatedRoute.params.map(item => item.category);
 
+  private trigger$ = this.account$
+    .flatMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
+    .debounceTime(200);
+
   giphyResult$ = this.account$
     .flatMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
     .debounceTime(200)
     .switchMap((cat: string) => this.giphyService.fetchGifs(cat));
 
   filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, this.giphyResult$], this.filterData);
+  loading$ = this.trigger$.mapTo(true).merge(this.giphyResult$.mapTo(false));
 
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,

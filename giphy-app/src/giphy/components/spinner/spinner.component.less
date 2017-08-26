@@ -1,15 +1,16 @@
 @import '../../../variables';
-
+:host {
+  position: fixed;
+  margin: auto;
+  top: 15px;
+}
 .spinner {
   width: 70px;
   height: 60px;
-  position: fixed;
-  left: 0;
-  right: 0;
-  margin: auto;
   z-index: 999999;
   -webkit-user-select: none;
   opacity: 0;
+
 }
 
 .spinner.active {
