@@ -51,9 +51,7 @@ export class IndexPageContainer {
     .flatMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
     .debounceTime(200);
 
-  giphyResult$ = this.account$
-    .flatMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
-    .debounceTime(200)
+  giphyResult$ = this.trigger$
     .switchMap((cat: string) => this.giphyService.fetchGifs(cat));
 
   filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, this.giphyResult$], this.filterData);
