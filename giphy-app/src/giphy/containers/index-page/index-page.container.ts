@@ -32,6 +32,8 @@ import 'rxjs/add/operator/mapTo';
     </div>
   `
 })
+// TODO: add virtual scroll
+// TODO: add caching to the virtual scroll
 export class IndexPageContainer {
   account$ = this.authenticationService.authenticate();
   searchTerm$ = new Subject();
