@@ -7,7 +7,6 @@ import { Giph } from '../../types/giph.result';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tile-wrapper" [ngStyle]="style">
-      {{giph.id}}
       <img [attr.src]="url" alt="">
     </div>
   `

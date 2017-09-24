@@ -12,7 +12,6 @@ import {GiphTileComponent} from '../giph-tile/giph-tile.component';
   template: `
     <spinner [spin]="loading"></spinner>
     <div style="position: fixed;">
-      {{tiles?.length}}
     </div>
     <giph-tile [giph]="giph" *ngFor="let giph of giphs"></giph-tile>
     <div>test</div>
