@@ -7,8 +7,14 @@ import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/distinct';
+import 'rxjs/add/operator/skipWhile';
+import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/operator/switch';
 import 'rxjs/add/operator/do';
+import 'rxjs/add/operator/startWith';
 
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/observable/fromEvent';
+import 'rxjs/add/observable/merge';
 import 'rxjs/add/observable/forkJoin';

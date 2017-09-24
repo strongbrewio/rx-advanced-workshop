@@ -1,11 +1,13 @@
-import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit} from '@angular/core';
 import { Giph } from '../../types/giph.result';
 
 @Component({
   selector: 'giph-tile',
   styleUrls: ['./giph-tile.component.less'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tile-wrapper" [ngStyle]="style">
+      {{giph.id}}
       <img [attr.src]="url" alt="">
     </div>
   `
