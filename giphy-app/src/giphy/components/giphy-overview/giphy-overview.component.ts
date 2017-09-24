@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
-import { Giph } from '../../types/giph.result';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output} from '@angular/core';
+import {Giph} from '../../types/giph.result';
+import {Observable} from 'rxjs/Observable';
 
 @Component({
   selector: 'giphy-overview',
@@ -7,9 +8,17 @@ import { Giph } from '../../types/giph.result';
   template: `
     <spinner [spin]="loading"></spinner>
     <giph-tile [giph]="giph" *ngFor="let giph of giphs"></giph-tile>
+    <div>test</div>
   `
 })
-export class GiphyOverviewComponent {
+export class GiphyOverviewComponent implements AfterViewInit {
   @Input() giphs: Giph[];
   @Input() loading: boolean;
+
+  constructor() {
+
+  }
+
+  ngAfterViewInit() {
+  }
 }

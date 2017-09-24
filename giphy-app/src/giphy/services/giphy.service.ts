@@ -10,6 +10,6 @@ export class GiphyService {
   }
 
   fetchGifs(term: string, offset: number = 0): Observable<GiphyResult> {
-    return this.httpClient.get(`https://api.giphy.com/v1/gifs/search?q=${term}&offset=${offset}&api_key=dc6zaTOxFJmzC`);
+      return this.httpClient.get(`https://api.giphy.com/v1/gifs/search?q=${term}&offset=${offset}&limit=50&api_key=dc6zaTOxFJmzC`);
   }
 }

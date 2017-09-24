@@ -1,19 +1,13 @@
-import { Component } from '@angular/core';
-import { AuthenticationService } from '../../services/authentication.service';
-import { GiphyService } from '../../services/giphy.service';
-import 'rxjs/add/operator/mergeMap';
-import { ActivatedRoute } from '@angular/router';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/merge';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/debounceTime';
-import 'rxjs/add/observable/combineLatest';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Observable } from 'rxjs/Observable';
-import { GiphyResult } from '../../types/giphy-result.type';
-import { Giph } from '../../types/giph.result';
-import 'rxjs/add/operator/mapTo';
+import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AuthenticationService} from '../../services/authentication.service';
+import {GiphyService} from '../../services/giphy.service';
+import {ActivatedRoute} from '@angular/router';
+import {Subject} from 'rxjs/Subject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import {Observable} from 'rxjs/Observable';
+import {GiphyResult} from '../../types/giphy-result.type';
+import {Giph} from '../../types/giph.result';
+import {GiphyOverviewComponent} from '../../components/giphy-overview/giphy-overview.component';
 
 @Component({
   selector: 'index-page',
@@ -24,17 +18,22 @@ import 'rxjs/add/operator/mapTo';
     <div class="main">
       <sidebar>
         <category-picker [categories]="categories" [currentCategory]="currentCategory$|async"></category-picker>
-        <giphy-filter [maxHeight]="maxHeight$|async" [maxWidth]="maxWidth$|async"
+        <giphy-filter [maxHeight]="maxHeight$|async"
+                      [maxWidth]="maxWidth$|async"
                       (setMaxHeight)="maxHeight$.next($event)"
                       (setMaxWidth)="maxWidth$.next($event)"></giphy-filter>
       </sidebar>
-      <giphy-overview [loading]="loading$|async" [giphs]="filteredGiphs$|async"></giphy-overview>
+      <giphy-overview [loading]="loading$|async"
+                      [giphs]="filteredGiphs$|async"></giphy-overview>
     </div>
   `
 })
 // TODO: add virtual scroll
 // TODO: add caching to the virtual scroll
-export class IndexPageContainer {
+export class IndexPageContainer implements OnInit, AfterViewInit {
+  @ViewChild(GiphyOverviewComponent, {read: ElementRef})
+  giphyOverviewElementRef: ElementRef;
+
   account$ = this.authenticationService.authenticate();
   searchTerm$ = new Subject();
   randomWord$ = new Subject();
@@ -42,10 +41,10 @@ export class IndexPageContainer {
   maxHeight$ = new BehaviorSubject(500);
   randomWords = ['derp', 'cat', 'shizzle', 'whatever', 'elephant', 'chair'];
   categories = [
-    { label: 'omg', value: 'omg' },
-    { label: 'wtf', value: 'wtf' },
-    { label: 'fml', value: 'fml' },
-    { label: 'awesome', value: 'awesome' },
+    {label: 'omg', value: 'omg'},
+    {label: 'wtf', value: 'wtf'},
+    {label: 'fml', value: 'fml'},
+    {label: 'awesome', value: 'awesome'},
   ];
   currentCategory$ = this.activatedRoute.params.map(item => item.category);
 
@@ -62,7 +61,9 @@ export class IndexPageContainer {
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,
               private activatedRoute: ActivatedRoute) {
+  }
 
+  ngOnInit() {
   }
 
   onLoadRandomGifs(): void {
@@ -70,8 +71,26 @@ export class IndexPageContainer {
     this.randomWord$.next(this.randomWords[randomNr]);
   }
 
+  ngAfterViewInit() {
+    // @formatter:off
+    // fromEvent:   ---s-s---s----s-----s-----     s = scrollEvent
+    //                    -map-
+    //              -----t---t----t-----t-----     t = scrollTop from event
+    //                    -debounceTime-
+    //              -----t---t----t-----t-----     t = scrollTop from event
+    //                    -filter-
+    //              --------------t-----------     t = scrollTop from event
+    // @formatter:on
+    Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
+      .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
+      .debounceTime(100)
+      // If the user scrolled till 250px of the end, we want to load new data
+      .filter((scrollTop) => scrollTop + this.giphyOverviewElementRef.nativeElement.clientHeight + 250 >= this.giphyOverviewElementRef.nativeElement.scrollHeight)
+      .subscribe(console.log);
+  }
+
   private filterData(maxWidth: number, maxHeight: number, giphyResult: GiphyResult): Giph[] {
     return giphyResult.data.filter(image => Number(image.images.original.width) < Number(maxWidth) &&
-      Number(image.images.original.height) < Number(maxHeight));
+    Number(image.images.original.height) < Number(maxHeight));
   }
 }
