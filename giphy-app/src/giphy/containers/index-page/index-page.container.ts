@@ -72,7 +72,7 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
   }
 
   onLoadRandomGifs(): void {
-    const randomNr = Math.floor(Math.random() * ( 1 + this.randomWords.length - 1 )) + 0;
+    const randomNr = Math.floor(Math.random() * ( 1 + this.randomWords.length - 1 ));
     this.randomWord$.next(this.randomWords[randomNr]);
   }
 
@@ -94,7 +94,6 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     //                    -mapTo-
     //              --------------e-----e-----     e = next Page event
     // @formatter:on
-
     const scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
       .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
       .debounceTime(200)
@@ -109,27 +108,38 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     const triggerReset$ = this.trigger$
       .mapTo({type: 'RESET_PAGE'});
 
+
+    const calculatePage = (acc: number, current: { type: string }) => {
+      if (current.type === 'NEXT_PAGE') {
+        return ++acc;
+      } else if (current.type = 'RESET_PAGE') {
+        return 0;
+      }
+    };
+
     // @formatter:off
     // scrollPage$:        ----s-------s--s-- s = scroll page event
-    //
+    // triggerReset$:      -------r---------- r = trigger reset event
+    //                        -merge-
+    //                     ----s--r----s--s--
+    //                        -scan-
+    //                     ----1--0----1--2--
+    //                        -startWith-
+    // page$:              0---1--0----1--2--
     // @formatter:on
     const page$: Observable<number> =
       Observable.merge(scrollPage$, triggerReset$)
-        .scan((acc: number, current: { type: string }) => {
-          if (current.type === 'NEXT_PAGE') {
-            return ++acc;
-          } else if (current.type = 'RESET_PAGE') {
-            return 0;
-          }
-        }, 0)
+        .scan(calculatePage, 0)
         .startWith(0);
 
+    // @formatter:off
+    //
+    // @formatter:on
     const dataByPage$ =
       Observable.combineLatest(page$, this.trigger$, (page, trigger) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .switch()
         .map((result: GiphyResult) => result.data)
-        .scan((acc, value) => [...acc, ...value])
-        .do((val) => console.log('data from page', val));
+        .scan((acc, value) => [...acc, ...value]);
 
     const dataByTrigger = this.trigger$
       .switchMap((cat: string) => this.giphyService.fetchGifs(cat))
@@ -137,8 +147,7 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
 
     const data$ = Observable.merge(dataByPage$, dataByTrigger);
 
-    this.filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, data$], this.filterData)
-      .do(data => console.log('size', data.length));
+    this.filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, data$], this.filterData);
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {
