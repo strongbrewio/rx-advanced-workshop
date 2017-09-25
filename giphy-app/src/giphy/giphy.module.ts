@@ -12,12 +12,13 @@ import { AuthenticationService } from './services/authentication.service';
 import { GiphyService } from './services/giphy.service';
 import { HttpClientModule } from '@angular/common/http';
 import { GiphTileComponent } from './components/giph-tile/giph-tile.component';
+import {IsLoggedInGuard} from './guards/is-logged-in.guard';
 
 @NgModule({
   imports: [CommonModule, RouterModule, HttpClientModule],
   declarations: [CategoryPickerComponent, GiphyFilterComponent, GiphyOverviewComponent, SidebarComponent,
     TopbarComponent, IndexPageContainer, SpinnerComponent, GiphTileComponent],
-  providers: [AuthenticationService, GiphyService],
+  providers: [AuthenticationService, GiphyService, IsLoggedInGuard],
   exports: [IndexPageContainer]
 })
 export class GiphyModule {

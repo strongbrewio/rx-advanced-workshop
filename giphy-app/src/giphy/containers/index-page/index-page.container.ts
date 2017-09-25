@@ -30,15 +30,12 @@ import {GiphyOverviewComponent} from '../../components/giphy-overview/giphy-over
 })
 // TODO: add virtual scroll
 // TODO: add caching to the virtual scroll
-export class IndexPageContainer implements OnInit, AfterViewInit {
+export class IndexPageContainer implements AfterViewInit {
   @ViewChild(GiphyOverviewComponent, {read: ElementRef})
   giphyOverviewElementRef: ElementRef;
 
   PAGE_LIMIT = 25;
 
-  account$ = this.authenticationService.authenticate();
-
-  fetchData$ = new Subject();
   searchTerm$ = new Subject();
   randomWord$ = new Subject();
   maxWidth$ = new BehaviorSubject(500);
@@ -52,23 +49,14 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
   ];
   currentCategory$ = this.activatedRoute.params.map(item => item.category);
 
-  private trigger$ = this.account$
-    .mergeMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
-    .debounceTime(200);
-
-  // giphyResult$ = this.trigger$
-  //   .switchMap((cat: string) => this.giphyService.fetchGifs(cat));
-
+  account$ = this.authenticationService.authenticate();
 
   filteredGiphs$;
-  // loading$ = this.trigger$.mapTo(true).merge(this.giphyResult$.mapTo(false));
+  loading$;
 
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,
               private activatedRoute: ActivatedRoute) {
-  }
-
-  ngOnInit() {
   }
 
   onLoadRandomGifs(): void {
@@ -91,6 +79,11 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
       }
     };
 
+    // TODO: I removed the account stream here since it might be a good example to put this into a
+    // guard so people can understand guards in angular. What do you think?
+    const query$ = Observable.merge(this.currentCategory$, this.searchTerm$, this.randomWord$)
+      .debounceTime(200);
+
     // @formatter:off
     // fromEvent:   ---s-s---s----s-----s-----     s = scrollEvent
     //                    -map-
@@ -109,11 +102,11 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
       .mapTo({type: 'NEXT_PAGE'});
 
     // @formatter:off
-    // trigger$:       ---------t-------  t = trigger update
+    // query$:         ---------t-------  t = trigger update
     //                    -mapTo-
     // triggerReset$:  ---------r-------  r = reset page event
     // @formatter:on
-    const triggerReset$ = this.trigger$
+    const triggerReset$ = query$
       .mapTo({type: 'RESET_PAGE'})
       .do(_ => this.giphyOverviewElementRef.nativeElement.scrollTop = 0);
 
@@ -134,7 +127,7 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
 
     // @formatter:off
     // page$:         0--------1----2------0--
-    // trigger$:      q----q------q-----------
+    // query$:        q----q------q-----------
     //                    -combineLatest-
     //                e----e---e--e-e------e--  e = [page, trigger]
     //                    -switchMap-
@@ -148,7 +141,7 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     //                                          (data is reset when page is 0)
     // @formatter:on
     const giphyResult$ =
-      page$.combineLatest(this.trigger$)
+      page$.combineLatest(query$)
         .switchMap(([page, trigger]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .map((result: GiphyResult) => result.data)
         .withLatestFrom(page$)
@@ -162,6 +155,8 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     // filteredGiphs$:    -----f---f---f--f--  f = filtered data
     // @formatter:on
     this.filteredGiphs$ = Observable.combineLatest(this.maxWidth$, this.maxHeight$, giphyResult$, this.filterData);
+
+    this.loading$ = query$.mapTo(true).merge(giphyResult$.mapTo(false));
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {
