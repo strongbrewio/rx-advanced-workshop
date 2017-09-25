@@ -11,7 +11,7 @@ import 'rx-imports';
 if (environment.production) {
   enableProdMode();
 } else {
-  setupRxDevtools();
+  // setupRxDevtools();
 }
 
 platformBrowserDynamic().bootstrapModule(AppModule);

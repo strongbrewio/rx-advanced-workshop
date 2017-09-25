@@ -34,7 +34,7 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
   @ViewChild(GiphyOverviewComponent, {read: ElementRef})
   giphyOverviewElementRef: ElementRef;
 
-  PAGE_LIMIT = 20;
+  PAGE_LIMIT = 25;
 
   account$ = this.authenticationService.authenticate();
 
@@ -56,12 +56,12 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     .mergeMap(() => this.currentCategory$.merge(this.searchTerm$, this.randomWord$))
     .debounceTime(200);
 
-  giphyResult$ = this.trigger$
-    .switchMap((cat: string) => this.giphyService.fetchGifs(cat));
+  // giphyResult$ = this.trigger$
+  //   .switchMap((cat: string) => this.giphyService.fetchGifs(cat));
 
 
   filteredGiphs$;
-  loading$ = this.trigger$.mapTo(true).merge(this.giphyResult$.mapTo(false));
+  // loading$ = this.trigger$.mapTo(true).merge(this.giphyResult$.mapTo(false));
 
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,
@@ -83,10 +83,18 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
         >= this.giphyOverviewElementRef.nativeElement.scrollHeight;
     };
 
+    const calculatePage = (acc: number, current: { type: string }) => {
+      if (current.type === 'NEXT_PAGE') {
+        return ++acc;
+      } else if (current.type = 'RESET_PAGE') {
+        return 0;
+      }
+    };
+
     // @formatter:off
     // fromEvent:   ---s-s---s----s-----s-----     s = scrollEvent
     //                    -map-
-    //              -----t---t----t-----t-----     t = scrollTop from event
+    //              ---t-t---t----t-----t-----     t = scrollTop from event
     //                    -debounceTime-
     //              -----t---t----t-----t-----     t = scrollTop from event
     //                    -filter-
@@ -106,16 +114,8 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     // triggerReset$:  ---------r-------  r = reset page event
     // @formatter:on
     const triggerReset$ = this.trigger$
-      .mapTo({type: 'RESET_PAGE'});
-
-
-    const calculatePage = (acc: number, current: { type: string }) => {
-      if (current.type === 'NEXT_PAGE') {
-        return ++acc;
-      } else if (current.type = 'RESET_PAGE') {
-        return 0;
-      }
-    };
+      .mapTo({type: 'RESET_PAGE'})
+      .do(_ => this.giphyOverviewElementRef.nativeElement.scrollTop = 0);
 
     // @formatter:off
     // scrollPage$:        ----s-------s--s-- s = scroll page event
@@ -136,18 +136,13 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
     //
     // @formatter:on
     const dataByPage$ =
-      Observable.combineLatest(page$, this.trigger$, (page, trigger) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
+      page$.combineLatest(this.trigger$, (page, trigger) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .switch()
         .map((result: GiphyResult) => result.data)
-        .scan((acc, value) => [...acc, ...value]);
+        .withLatestFrom(page$)
+        .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], []);
 
-    const dataByTrigger = this.trigger$
-      .switchMap((cat: string) => this.giphyService.fetchGifs(cat))
-      .map((result: GiphyResult) => result.data);
-
-    const data$ = Observable.merge(dataByPage$, dataByTrigger);
-
-    this.filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, data$], this.filterData);
+    this.filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, dataByPage$], this.filterData);
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {
