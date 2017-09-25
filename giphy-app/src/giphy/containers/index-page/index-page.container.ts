@@ -95,6 +95,7 @@ export class IndexPageContainer implements AfterViewInit {
     //                    -mapTo-
     //              --------------e-----e-----     e = next Page event
     // @formatter:on
+    // TODO: how to mock this stream :p
     const scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
       .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
       .debounceTime(200)
