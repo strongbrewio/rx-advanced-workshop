@@ -133,16 +133,35 @@ export class IndexPageContainer implements OnInit, AfterViewInit {
         .startWith(0);
 
     // @formatter:off
-    //
+    // page$:         0--------1----2------0--
+    // trigger$:      q----q------q-----------
+    //                    -combineLatest-
+    //                e----e---e--e-e------e--  e = [page, trigger]
+    //                    -switchMap-
+    //                d----d------d-d------d--  d = data from backend
+    //                    -withLatestFrom-
+    //                t----t------t-t------t--  t = [data, pageNumber]
+    //                    -scan-
+    // giphyResult$   1----2------1-2------3--  1 = one set of data,
+    //                                          2 = two sets of data,
+    //                                          3 = three sets of data
+    //                                          (data is reset when page is 0)
     // @formatter:on
-    const dataByPage$ =
-      page$.combineLatest(this.trigger$, (page, trigger) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
-        .switch()
+    const giphyResult$ =
+      page$.combineLatest(this.trigger$)
+        .switchMap(([page, trigger]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .map((result: GiphyResult) => result.data)
         .withLatestFrom(page$)
         .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], []);
 
-    this.filteredGiphs$ = Observable.combineLatest([this.maxWidth$, this.maxHeight$, dataByPage$], this.filterData);
+    // @formatter:off
+    // maxWidth$:         w--------w---------  w = width
+    // maxHeight$:        h------------h-----  h = height
+    // giphyResult$:      -----d----------d--  d = data
+    //                       -combineLatest-
+    // filteredGiphs$:    -----f---f---f--f--  f = filtered data
+    // @formatter:on
+    this.filteredGiphs$ = Observable.combineLatest(this.maxWidth$, this.maxHeight$, giphyResult$, this.filterData);
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {
