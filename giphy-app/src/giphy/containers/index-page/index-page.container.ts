@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
 import {AuthenticationService} from '../../services/authentication.service';
 import {GiphyService} from '../../services/giphy.service';
 import {ActivatedRoute} from '@angular/router';
@@ -8,6 +8,7 @@ import {Observable} from 'rxjs/Observable';
 import {GiphyResult} from '../../types/giphy-result.type';
 import {Giph} from '../../types/giph.result';
 import {GiphyOverviewComponent} from '../../components/giphy-overview/giphy-overview.component';
+import {async} from 'rxjs/scheduler/async';
 
 @Component({
   selector: 'index-page',
@@ -34,6 +35,9 @@ export class IndexPageContainer implements AfterViewInit {
   @ViewChild(GiphyOverviewComponent, {read: ElementRef})
   giphyOverviewElementRef: ElementRef;
 
+  scheduler = async;
+  DEBOUNCE_TIME = 200;
+
   PAGE_LIMIT = 25;
 
   searchTerm$ = new Subject();
@@ -47,12 +51,13 @@ export class IndexPageContainer implements AfterViewInit {
     {label: 'fml', value: 'fml'},
     {label: 'awesome', value: 'awesome'},
   ];
-  currentCategory$ = this.activatedRoute.params.map(item => item.category);
+  currentCategory$;
 
   account$ = this.authenticationService.authenticate();
 
   filteredGiphs$;
   loading$;
+  scrollPage$;
 
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,
@@ -67,6 +72,7 @@ export class IndexPageContainer implements AfterViewInit {
   ngAfterViewInit() {
     // If the user scrolled till 250px of the end, we want to load new data
     const hasScrolledTowardsTheEnd = (scrollTop) => {
+      const test = this.giphyOverviewElementRef.nativeElement.scrollHeight;
       return scrollTop + this.giphyOverviewElementRef.nativeElement.clientHeight + 250
         >= this.giphyOverviewElementRef.nativeElement.scrollHeight;
     };
@@ -78,6 +84,8 @@ export class IndexPageContainer implements AfterViewInit {
         return 0;
       }
     };
+
+    this.currentCategory$ = this.activatedRoute.params.map(item => item.category);
 
     // TODO: I removed the account stream here since it might be a good example to put this into a
     // guard so people can understand guards in angular. What do you think?
@@ -96,9 +104,10 @@ export class IndexPageContainer implements AfterViewInit {
     //              --------------e-----e-----     e = next Page event
     // @formatter:on
     // TODO: how to mock this stream :p
-    const scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
+
+    this.scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
       .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
-      .debounceTime(200)
+      .debounceTime(this.DEBOUNCE_TIME, this.scheduler)
       .filter(hasScrolledTowardsTheEnd)
       .mapTo({type: 'NEXT_PAGE'});
 
@@ -122,7 +131,7 @@ export class IndexPageContainer implements AfterViewInit {
     // page$:              0---1--0----1--2--
     // @formatter:on
     const page$: Observable<number> =
-      Observable.merge(scrollPage$, triggerReset$)
+      Observable.merge(this.scrollPage$, triggerReset$)
         .scan(calculatePage, 0)
         .startWith(0);
 
