@@ -6,14 +6,18 @@ import {marbles} from 'rxjs-marbles';
 import createSpyObj = jasmine.createSpyObj;
 describe('container: IndexPageContainer', () => {
   let container: IndexPageContainer;
-  let authenticationServiceMock: AuthenticationService;
-  let giphyServiceMock: GiphyService;
-  let activatedRouteMock: ActivatedRoute;
+  let authenticationServiceMock;
+  let giphyServiceMock;
+  let activatedRouteMock;
 
   beforeEach(() => {
-    authenticationServiceMock = createSpyObj('authenticationService', ['authenticate']);
-    giphyServiceMock = createSpyObj('giphyService', ['fetchGifs']);
-    activatedRouteMock = createSpyObj('activatedRoute', ['']);
+    authenticationServiceMock = {
+      authenticate: jest.fn()
+    };
+    giphyServiceMock = {
+      fetchGifs: jest.fn()
+    };
+    activatedRouteMock = jest.fn();
 
     container = new IndexPageContainer(
       authenticationServiceMock,
@@ -46,7 +50,7 @@ describe('container: IndexPageContainer', () => {
       };
 
       scroll$.subscribe(val => {
-          console.log('val');
+        console.log('val');
       });
     }));
   });
