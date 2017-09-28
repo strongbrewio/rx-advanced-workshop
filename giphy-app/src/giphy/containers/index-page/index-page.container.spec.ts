@@ -26,9 +26,13 @@ describe('container: IndexPageContainer', () => {
     it('should set up the streams for fetching the data with an infinite scroll', marbles((m) => {
       // @formatter:off
       const values = {
-        a: {item: {category: 'category'}}
+        a: {item: {category: 'category'}},
+        b: 'searchTerm',
+        c: 'randomWord'
       };
-      const params$ =                 m.cold('----a----------', values);
+      const params$ =                 m.cold('----a----------------', values);
+      const searchTerm$ =             m.cold('-----------b---------', values);
+      const randomWord$ =             m.cold('---------------c-----', values);
       const scroll$ =                 m.cold('-------x------x');
 
       const expectedFilteredGiphs =         ('---d-----');

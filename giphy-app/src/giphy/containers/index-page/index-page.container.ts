@@ -40,8 +40,8 @@ export class IndexPageContainer implements AfterViewInit {
 
   PAGE_LIMIT = 25;
 
-  searchTerm$ = new Subject();
-  randomWord$ = new Subject();
+  searchTerm$ = new Subject<string>();
+  randomWord$ = new Subject<string>();
   maxWidth$ = new BehaviorSubject(500);
   maxHeight$ = new BehaviorSubject(500);
   randomWords = ['derp', 'cat', 'shizzle', 'whatever', 'elephant', 'chair'];
@@ -85,12 +85,26 @@ export class IndexPageContainer implements AfterViewInit {
       }
     };
 
-    this.currentCategory$ = this.activatedRoute.params.map(item => item.category);
+    this.currentCategory$ = this.activatedRoute.params
+      .map(item => item.category)
+      .filter(category => !!category);
 
     // TODO: I removed the account stream here since it might be a good example to put this into a
     // guard so people can understand guards in angular. What do you think?
     const query$ = Observable.merge(this.currentCategory$, this.searchTerm$, this.randomWord$)
-      .debounceTime(200);
+      .startWith(undefined)
+      .debounceTime(200)
+      .shareReplay(1);
+
+    // @formatter:off
+    // query$:         ---------t-------  t = trigger update
+    //                    -mapTo-
+    // triggerReset$:  ---------r-------  r = reset page event
+    // @formatter:on
+    const triggerReset$ = query$
+      .skip(1)
+      .mapTo({type: 'RESET_PAGE'})
+      .do(_ => this.giphyOverviewElementRef.nativeElement.scrollTop = 0);
 
     // @formatter:off
     // fromEvent:   ---s-s---s----s-----s-----     s = scrollEvent
@@ -104,21 +118,11 @@ export class IndexPageContainer implements AfterViewInit {
     //              --------------e-----e-----     e = next Page event
     // @formatter:on
     // TODO: how to mock this stream :p
-
     this.scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
       .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
       .debounceTime(this.DEBOUNCE_TIME, this.scheduler)
       .filter(hasScrolledTowardsTheEnd)
       .mapTo({type: 'NEXT_PAGE'});
-
-    // @formatter:off
-    // query$:         ---------t-------  t = trigger update
-    //                    -mapTo-
-    // triggerReset$:  ---------r-------  r = reset page event
-    // @formatter:on
-    const triggerReset$ = query$
-      .mapTo({type: 'RESET_PAGE'})
-      .do(_ => this.giphyOverviewElementRef.nativeElement.scrollTop = 0);
 
     // @formatter:off
     // scrollPage$:        ----s-------s--s-- s = scroll page event
@@ -133,7 +137,8 @@ export class IndexPageContainer implements AfterViewInit {
     const page$: Observable<number> =
       Observable.merge(this.scrollPage$, triggerReset$)
         .scan(calculatePage, 0)
-        .startWith(0);
+        .startWith(0)
+        .shareReplay(1);
 
     // @formatter:off
     // page$:         0--------1----2------0--
@@ -152,10 +157,14 @@ export class IndexPageContainer implements AfterViewInit {
     // @formatter:on
     const giphyResult$ =
       page$.combineLatest(query$)
-        .switchMap(([page, trigger]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
+        // Small hack used to avoid two network requests in the case both the page
+        // and the query change at the same time
+        .debounceTime(0)
+        .switchMap(([page, trigger]: [number, string]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .map((result: GiphyResult) => result.data)
         .withLatestFrom(page$)
-        .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], []);
+        .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], [])
+        .shareReplay(1);
 
     // @formatter:off
     // maxWidth$:         w--------w---------  w = width
