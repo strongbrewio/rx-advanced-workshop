@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit} from '@angular/core';
-import { Giph } from '../../types/giph.result';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit} from '@angular/core';
+import {Giph} from '../../types/giph.result';
 
 @Component({
   selector: 'giph-tile',
@@ -26,11 +26,11 @@ export class GiphTileComponent implements OnInit {
       width: this.giph.images.original.width + 'px',
       height: this.giph.images.original.height + 'px',
       background: this.colors[this.randomNr]
-    }
+    };
   }
 
   ngOnInit(): void {
-    let img = new Image();
+    const img = new Image();
     img.src = this.giph.images.original.url;
     img.addEventListener('load', () => {
       this.url = img.src;
