@@ -33,35 +33,45 @@ describe('container: IndexPageContainer', () => {
       const giph501x499 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '499'}}});
       const giph498x498 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '498', height: '498'}}});
       const giph502x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '502', height: '502'}}});
+      const giph497x497 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '479', height: '479'}}});
       // const giph501x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '502'}}});
       // const giph501x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '502'}}});
 
       const firstResult = {data: [giph501x501, giph499x499, giph499x501, giph501x499]};
       const secondResult = {data: [giph498x498, giph502x502]};
+      const thirdResult = {data: [giph497x497]};
       giphyServiceMock.fetchGifs
         .mockImplementationOnce(() => Observable.of(firstResult))
-        .mockImplementationOnce(() => Observable.of(secondResult));
+        .mockImplementationOnce(() => Observable.of(secondResult))
+        .mockImplementationOnce(() => Observable.of(thirdResult))
+        .mockImplementationOnce(() => Observable.of(firstResult))
+        .mockImplementationOnce(() => Observable.of(firstResult))
+        .mockImplementationOnce(() => Observable.of(firstResult));
 
-      // @formatter:off
+      // @formatter:of
       const values = {
         a: {},
         b: {category: 'category'},
         c: 'searchTerm',
         d: 'randomWord',
         e: 500,
-        f: 400,
+        f: 600,
         g: 500,
         h: 600,
         i: [giph499x499],
-        j: [giph499x499, giph498x498]
+        j: [giph499x499, giph498x498],
+        k: [giph499x499, giph498x498, giph497x497],
+        l: [giph499x499],
+        m: [giph499x499, giph501x499],
+        n: [giph501x501, giph499x499, giph499x501, giph501x499],
       };
-      const params$ =                 m.cold('a-------------------------b------------------', values);
+      const params$ =                 m.cold('a--------------------------b-----------------', values);
       const searchTerm$ =             m.cold('-------------------------------c-------------', values);
       const randomWord$ =             m.cold('-----------------------------------d---------', values);
-      const scrollPage$ =             m.cold('----xx-----x----x-----x-----------------------');
+      const scrollPage$ =             m.cold('----xx-----x----x-----x----------------------');
       const maxWidth$ =               m.cold('e--------------------------------------f-----', values);
       const maxHeight$ =              m.cold('g------------------------------------------h-', values);
-      const expectedFilteredGiphs =         ('--i----------j-------------------------------');
+      const expectedFilteredGiphs =         ('--i----------j----------k----l---l---l-m---n-');
       // @formatter:on
       const giphyOverviewElementMock = {
         nativeElement: {
