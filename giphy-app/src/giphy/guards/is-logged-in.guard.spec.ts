@@ -1,15 +1,27 @@
-import { TestBed, async, inject } from '@angular/core/testing';
+import {IsLoggedInGuard} from './is-logged-in.guard';
+import {Observable} from "rxjs/Observable";
+import {ActivatedRouteSnapshot, RouterStateSnapshot} from "@angular/router";
 
-import { IsLoggedInGuard } from './is-logged-in.guard';
+describe('guard: IsLoggedInGuard', () => {
+  let guard: IsLoggedInGuard;
+  let authenticationServiceMock;
 
-describe('IsLoggedInGuard', () => {
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [IsLoggedInGuard]
-    });
+    authenticationServiceMock = {
+      authenticate: jest.fn()
+    };
+
+    guard = new IsLoggedInGuard(authenticationServiceMock);
   });
 
-  it('should ...', inject([IsLoggedInGuard], (guard: IsLoggedInGuard) => {
-    expect(guard).toBeTruthy();
-  }));
+  describe('on canActivate', () => {
+    it('should call the authentication service to get the account and return it', () => {
+      const mockReturnObs$ = Observable.of({firstName: 'firstName'});
+      authenticationServiceMock.authenticate.mockReturnValue(mockReturnObs$);
+
+      const result$ = guard.canActivate({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot);
+
+      expect(result$).toBe(mockReturnObs$);
+    });
+  });
 });
