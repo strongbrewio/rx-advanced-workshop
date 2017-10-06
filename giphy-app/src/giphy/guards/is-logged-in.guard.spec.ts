@@ -1,6 +1,6 @@
 import {IsLoggedInGuard} from './is-logged-in.guard';
-import {Observable} from "rxjs/Observable";
-import {ActivatedRouteSnapshot, RouterStateSnapshot} from "@angular/router";
+import {Observable} from 'rxjs/Observable';
+import {ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
 
 describe('guard: IsLoggedInGuard', () => {
   let guard: IsLoggedInGuard;

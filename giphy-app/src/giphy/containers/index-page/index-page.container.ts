@@ -57,7 +57,9 @@ export class IndexPageContainer implements AfterViewInit {
 
   filteredGiphs$;
   loading$;
-  scrollPage$;
+  page$;
+  triggerReset$;
+  query$;
 
   constructor(private authenticationService: AuthenticationService,
               private giphyService: GiphyService,
@@ -72,7 +74,6 @@ export class IndexPageContainer implements AfterViewInit {
   ngAfterViewInit() {
     // If the user scrolled till 250px of the end, we want to load new data
     const hasScrolledTowardsTheEnd = (scrollTop) => {
-      const test = this.giphyOverviewElementRef.nativeElement.scrollHeight;
       return scrollTop + this.giphyOverviewElementRef.nativeElement.clientHeight + 250
         >= this.giphyOverviewElementRef.nativeElement.scrollHeight;
     };
@@ -89,11 +90,11 @@ export class IndexPageContainer implements AfterViewInit {
       .map(item => item.category)
       .filter(category => !!category);
 
-    // TODO: I removed the account stream here since it might be a good example to put this into a
-    // guard so people can understand guards in angular. What do you think?
-    const query$ = Observable.merge(this.currentCategory$, this.searchTerm$, this.randomWord$)
+    // TODO: (kwi to bre) I removed the account stream here since it might be a good example to put this into a
+    // guard so people can understand guards in angular with observables. What do you think?
+    this.query$ = Observable.merge(this.currentCategory$, this.searchTerm$, this.randomWord$)
       .startWith(undefined)
-      .debounceTime(200)
+      .debounceTime(this.DEBOUNCE_TIME, this.scheduler)
       .shareReplay(1);
 
     // @formatter:off
@@ -101,8 +102,7 @@ export class IndexPageContainer implements AfterViewInit {
     //                    -mapTo-
     // triggerReset$:  ---------r-------  r = reset page event
     // @formatter:on
-    const triggerReset$ = query$
-      .skip(1)
+    this.triggerReset$ = this.query$
       .mapTo({type: 'RESET_PAGE'})
       .do(_ => this.giphyOverviewElementRef.nativeElement.scrollTop = 0);
 
@@ -118,9 +118,9 @@ export class IndexPageContainer implements AfterViewInit {
     //              --------------e-----e-----     e = next Page event
     // @formatter:on
     // TODO: how to mock this stream :p
-    this.scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
-      .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
+    const scrollPage$ = Observable.fromEvent(this.giphyOverviewElementRef.nativeElement, 'scroll')
       .debounceTime(this.DEBOUNCE_TIME, this.scheduler)
+      .map(_ => this.giphyOverviewElementRef.nativeElement.scrollTop)
       .filter(hasScrolledTowardsTheEnd)
       .mapTo({type: 'NEXT_PAGE'});
 
@@ -134,8 +134,8 @@ export class IndexPageContainer implements AfterViewInit {
     //                        -startWith-
     // page$:              0---1--0----1--2--
     // @formatter:on
-    const page$: Observable<number> =
-      Observable.merge(this.scrollPage$, triggerReset$)
+    this.page$ =
+      Observable.merge(scrollPage$, this.triggerReset$)
         .scan(calculatePage, 0)
         .startWith(0)
         .shareReplay(1);
@@ -156,13 +156,13 @@ export class IndexPageContainer implements AfterViewInit {
     //                                          (data is reset when page is 0)
     // @formatter:on
     const giphyResult$ =
-      page$.combineLatest(query$)
+      this.page$.combineLatest(this.query$)
         // Small hack used to avoid two network requests in the case both the page
         // and the query change at the same time
-        .debounceTime(0)
+        .debounceTime(0, this.scheduler)
         .switchMap(([page, trigger]: [number, string]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .map((result: GiphyResult) => result.data)
-        .withLatestFrom(page$)
+        .withLatestFrom(this.page$)
         .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], [])
         .shareReplay(1);
 
@@ -175,7 +175,7 @@ export class IndexPageContainer implements AfterViewInit {
     // @formatter:on
     this.filteredGiphs$ = Observable.combineLatest(this.maxWidth$, this.maxHeight$, giphyResult$, this.filterData);
 
-    this.loading$ = query$.mapTo(true).merge(giphyResult$.mapTo(false));
+    this.loading$ = this.query$.mapTo(true).merge(giphyResult$.mapTo(false));
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {

@@ -1,6 +1,9 @@
 import {IndexPageContainer} from './index-page.container';
 import {marbles} from 'rxjs-marbles';
 import createSpyObj = jasmine.createSpyObj;
+import {GiphBuilder} from '../../types/giph.result';
+import {GiphyResult} from '../../types/giphy-result.type';
+import {Observable} from 'rxjs/Observable';
 describe('container: IndexPageContainer', () => {
   let container: IndexPageContainer;
   let authenticationServiceMock;
@@ -24,51 +27,81 @@ describe('container: IndexPageContainer', () => {
 
   describe('on ngAfterViewInit', () => {
     it('should set up the streams for fetching the data with an infinite scroll', marbles((m) => {
+      const giph501x501 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '501'}}});
+      const giph499x499 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '499', height: '499'}}});
+      const giph499x501 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '499', height: '501'}}});
+      const giph501x499 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '499'}}});
+      const giph498x498 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '498', height: '498'}}});
+      const giph502x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '502', height: '502'}}});
+      // const giph501x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '502'}}});
+      // const giph501x502 = GiphBuilder.buildGiph({images: {original: {url: 'test', width: '501', height: '502'}}});
+
+      const firstResult = {data: [giph501x501, giph499x499, giph499x501, giph501x499]};
+      const secondResult = {data: [giph498x498, giph502x502]};
+      giphyServiceMock.fetchGifs
+        .mockImplementationOnce(() => Observable.of(firstResult))
+        .mockImplementationOnce(() => Observable.of(secondResult));
+
       // @formatter:off
       const values = {
-        a: {item: {category: 'category'}},
-        b: 'searchTerm',
-        c: 'randomWord'
+        a: {},
+        b: {category: 'category'},
+        c: 'searchTerm',
+        d: 'randomWord',
+        e: 500,
+        f: 400,
+        g: 500,
+        h: 600,
+        i: [giph499x499],
+        j: [giph499x499, giph498x498]
       };
-      const params$ =                 m.cold('----a----------------', values);
-      const searchTerm$ =             m.cold('-----------b---------', values);
-      const randomWord$ =             m.cold('---------------c-----', values);
-      const scroll$ =                 m.cold('-------x------x');
-
-      const expectedFilteredGiphs =         ('---d-----');
+      const params$ =                 m.cold('a-------------------------b------------------', values);
+      const searchTerm$ =             m.cold('-------------------------------c-------------', values);
+      const randomWord$ =             m.cold('-----------------------------------d---------', values);
+      const scrollPage$ =             m.cold('----xx-----x----x-----x-----------------------');
+      const maxWidth$ =               m.cold('e--------------------------------------f-----', values);
+      const maxHeight$ =              m.cold('g------------------------------------------h-', values);
+      const expectedFilteredGiphs =         ('--i----------j-------------------------------');
       // @formatter:on
-
-      activatedRouteMock.params = params$;
-
       const giphyOverviewElementMock = {
         nativeElement: {
           addEventListener: (eventType, listener) => {
-              scroll$.subscribe(val => {
-                listener(val);
-              });
+            scrollPage$.subscribe(val => {
+              listener(val);
+            });
           },
           removeEventListener: () => void 0,
           dispatchEvent: () => void 0,
+          scrollTopData: [200, 500, 1400, 1800],
           get scrollTop() {
-            const data = [200, 500, 1000, 1200];
-            return data.splice(0, 1)[0];
+            return this.scrollTopData.splice(0, 1)[0];
+          },
+          scrollTopSetter: [],
+          set scrollTop(val) {
+            this.scrollTopSetter.push(val);
           },
           clientHeight: 500,
+          scrollHeightDate: [1200, 1200, 2400, 2400],
           get scrollHeight() {
-            const data = [800, 800, 1600, 1600];
-            return data.splice(0, 1)[0];
+            return this.scrollHeightDate.splice(0, 1)[0];
           }
         }
       };
+
+      activatedRouteMock.params = params$;
       container.giphyOverviewElementRef = giphyOverviewElementMock;
       container.scheduler = m.scheduler;
-      container.DEBOUNCE_TIME = 10;
+      container.DEBOUNCE_TIME = 20;
+      container.searchTerm$ = searchTerm$ as any;
+      container.randomWord$ = randomWord$ as any;
+      container.maxHeight$ = maxHeight$ as any;
+      container.maxWidth$ = maxWidth$ as any;
 
       container.ngAfterViewInit();
 
-      m.expect(container.scrollPage$).toBeObservable(expectedFilteredGiphs);
+      // m.expect(container.triggerReset$).toBeObservable(expectedFilteredGiphs);
 
-      // m.expect(container.filteredGiphs$).toBeObservable(expectedFilteredGiphs);
+      m.expect(container.filteredGiphs$).toBeObservable(expectedFilteredGiphs, values);
     }));
   });
 });
