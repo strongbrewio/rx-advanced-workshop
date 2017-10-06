@@ -64,14 +64,17 @@ describe('container: IndexPageContainer', () => {
         l: [giph499x499],
         m: [giph499x499, giph501x499],
         n: [giph501x501, giph499x499, giph499x501, giph501x499],
+        o: true,
+        p: false,
       };
-      const params$ =                 m.cold('a--------------------------b-----------------', values);
-      const searchTerm$ =             m.cold('-------------------------------c-------------', values);
-      const randomWord$ =             m.cold('-----------------------------------d---------', values);
-      const scrollPage$ =             m.cold('----xx-----x----x-----x----------------------');
-      const maxWidth$ =               m.cold('e--------------------------------------f-----', values);
-      const maxHeight$ =              m.cold('g------------------------------------------h-', values);
-      const expectedFilteredGiphs =         ('--i----------j----------k----l---l---l-m---n-');
+      const params$ =                 m.cold('a--------------------------b---------------------', values);
+      const searchTerm$ =             m.cold('-------------------------------c-----------------', values);
+      const randomWord$ =             m.cold('-----------------------------------d-------------', values);
+      const scrollPage$ =             m.cold('----xx-----x----x-----x--------------------------');
+      const maxWidth$ =               m.cold('e-----------------------------------------f------', values);
+      const maxHeight$ =              m.cold('g----------------------------------------------h-', values);
+      const expectedFilteredGiphs =         ('--i----------j----------k----l---l---l----m----n-');
+      const loading$ =                      ('o-(op)-------(op)-------(op)-(op)(op)(op)--------')
       // @formatter:on
       const giphyOverviewElementMock = {
         nativeElement: {
@@ -109,9 +112,8 @@ describe('container: IndexPageContainer', () => {
 
       container.ngAfterViewInit();
 
-      // m.expect(container.triggerReset$).toBeObservable(expectedFilteredGiphs);
-
       m.expect(container.filteredGiphs$).toBeObservable(expectedFilteredGiphs, values);
+      m.expect(container.loading$).toBeObservable(loading$, values);
     }));
   });
 });

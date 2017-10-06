@@ -160,13 +160,7 @@ export class IndexPageContainer implements AfterViewInit {
         .switchMap(([page, trigger]: [number, string]) => this.giphyService.fetchGifs(trigger, page * this.PAGE_LIMIT))
         .map((result: GiphyResult) => result.data)
         .withLatestFrom(page$)
-        .do((val) => {
-            console.log('test', val);
-        })
         .scan((acc, [data, page]) => page === 0 ? data : [...acc, ...data], [])
-        .do((val) => {
-            console.log('result', val);
-        })
         .shareReplay(1);
 
     // @formatter:off
@@ -178,7 +172,7 @@ export class IndexPageContainer implements AfterViewInit {
     // @formatter:on
     this.filteredGiphs$ = Observable.combineLatest(this.maxWidth$, this.maxHeight$, giphyResult$, this.filterData);
 
-    this.loading$ = query$.mapTo(true).merge(giphyResult$.mapTo(false));
+    this.loading$ = page$.mapTo(true).merge(giphyResult$.mapTo(false));
   }
 
   private filterData(maxWidth: number, maxHeight: number, data: Giph[]): Giph[] {
